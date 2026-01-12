@@ -18,6 +18,8 @@ const AuthButton: React.FC<AuthButtonProps> = ({ user, onAuthChange }) => {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showUserId, setShowUserId] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const getErrorMessage = (error: any): string => {
     const code = error?.code || "";
@@ -75,6 +77,32 @@ const AuthButton: React.FC<AuthButtonProps> = ({ user, onAuthChange }) => {
     }
   };
 
+  const handleCopyUserId = async () => {
+    if (!user?.uid) return;
+    
+    try {
+      await navigator.clipboard.writeText(user.uid);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      // Fallback for older browsers
+      const textArea = document.createElement("textarea");
+      textArea.value = user.uid;
+      textArea.style.position = "fixed";
+      textArea.style.opacity = "0";
+      document.body.appendChild(textArea);
+      textArea.select();
+      try {
+        document.execCommand("copy");
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } catch (e) {
+        console.error("Failed to copy:", e);
+      }
+      document.body.removeChild(textArea);
+    }
+  };
+
   // Google Sign-In handler (commented out)
   // const handleSignIn = async () => {
   //   try {
@@ -87,8 +115,69 @@ const AuthButton: React.FC<AuthButtonProps> = ({ user, onAuthChange }) => {
 
   if (user) {
     return (
-      <div className="flex items-center space-x-3">
-        <span className="text-sm font-sans text-pi-text">{user.email}</span>
+      <div className="flex items-center space-x-2 md:space-x-3">
+        <div className="relative">
+          <button
+            onClick={() => setShowUserId(!showUserId)}
+            className="text-xs font-sans text-pi-secondary hover:text-pi-accent transition-colors px-2 py-1 border border-pi-hover rounded-full hover:border-pi-accent flex items-center space-x-1"
+            title="Click to show User ID"
+          >
+            <svg
+              className="w-3 h-3"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+              />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+              />
+            </svg>
+            <span className="hidden md:inline">ID</span>
+          </button>
+          
+          {showUserId && (
+            <div className="absolute right-0 top-full mt-2 bg-white border border-pi-hover rounded-lg shadow-lg p-3 z-50 min-w-[200px] md:min-w-[300px]">
+              <div className="flex justify-between items-start mb-2">
+                <span className="text-xs font-sans font-medium text-pi-text">
+                  User ID:
+                </span>
+                <button
+                  onClick={() => setShowUserId(false)}
+                  className="text-pi-secondary hover:text-pi-text text-xs"
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="flex items-center space-x-2 mb-2">
+                <code className="text-xs font-mono text-pi-text bg-pi-bg px-2 py-1 rounded break-all">
+                  {user.uid}
+                </code>
+                <button
+                  onClick={handleCopyUserId}
+                  className="flex-shrink-0 text-xs font-sans text-pi-accent hover:text-[#08422D] transition-colors px-2 py-1 border border-pi-accent rounded hover:bg-pi-accent/10"
+                >
+                  {copied ? "✓ Copied!" : "Copy"}
+                </button>
+              </div>
+              <p className="text-[10px] text-pi-secondary font-sans">
+                Use this ID in your Apple Shortcut
+              </p>
+            </div>
+          )}
+        </div>
+        
+        <span className="text-sm font-sans text-pi-text hidden md:inline">
+          {user.email}
+        </span>
         <button
           onClick={handleSignOut}
           className="text-xs font-sans text-pi-secondary hover:text-pi-accent transition-colors px-3 py-1 border border-pi-hover rounded-full hover:border-pi-accent"
