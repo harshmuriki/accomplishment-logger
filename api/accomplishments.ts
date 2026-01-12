@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore, collection, addDoc, Timestamp } from "firebase/firestore";
+import { getFirestore, collection, addDoc, Timestamp, doc } from "firebase/firestore";
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 
 // Firebase configuration
@@ -38,7 +38,7 @@ export default async function handler(
   }
 
   try {
-    const { text, rating, timestamp } = req.body;
+    const { text, rating, timestamp, userId } = req.body;
 
     // Validation
     if (!text || typeof text !== "string" || text.trim().length === 0) {
@@ -56,6 +56,10 @@ export default async function handler(
         .json({ error: "Rating must be a number between 1 and 10" });
     }
 
+    if (!userId || typeof userId !== "string") {
+      return res.status(400).json({ error: "userId is required" });
+    }
+
     // Use provided timestamp or current time
     const entryTimestamp = timestamp ? new Date(timestamp) : new Date();
 
@@ -68,9 +72,11 @@ export default async function handler(
     const firestore = getFirestoreInstance();
 
     if (firestore) {
-      // Save to Firestore
+      // Save to Firestore - using subcollection per user: users/{userId}/accomplishments
       try {
-        const docRef = await addDoc(collection(firestore, "accomplishments"), {
+        const userDocRef = doc(firestore, "users", userId);
+        const accomplishmentsRef = collection(userDocRef, "accomplishments");
+        const docRef = await addDoc(accomplishmentsRef, {
           ...newEntry,
           timestamp: Timestamp.fromDate(newEntry.timestamp),
         });

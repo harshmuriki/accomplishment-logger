@@ -1,28 +1,42 @@
 import React, { useState, useEffect } from 'react';
 import InputForm from './components/InputForm';
 import AccomplishmentList from './components/AccomplishmentList';
-import { saveAccomplishment, getAccomplishments } from './services/firebase';
+import AuthButton from './components/AuthButton';
+import { saveAccomplishment, getAccomplishments, onAuthStateChange, getCurrentUser } from './services/firebase';
 import { Accomplishment, LoadingState } from './types';
+import { User } from 'firebase/auth';
 
 const App: React.FC = () => {
   const [items, setItems] = useState<Accomplishment[]>([]);
   const [loadingState, setLoadingState] = useState<LoadingState>('idle');
   const [initLoaded, setInitLoaded] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+
+  // Set up auth state listener
+  useEffect(() => {
+    const unsubscribe = onAuthStateChange((currentUser) => {
+      setUser(currentUser);
+      // Reload data when auth state changes
+      loadData();
+    });
+    return () => unsubscribe();
+  }, []);
 
   // Load initial data
+  const loadData = async () => {
+    const data = await getAccomplishments();
+    setItems(data);
+    setInitLoaded(true);
+  };
+
   useEffect(() => {
-    const loadData = async () => {
-      const data = await getAccomplishments();
-      setItems(data);
-      setInitLoaded(true);
-    };
     loadData();
-  }, []);
+  }, [user]);
 
   const handleSave = async (text: string, rating: number) => {
     try {
       setLoadingState('saving');
-      const savedItem = await saveAccomplishment(text, rating);
+      const savedItem = await saveAccomplishment(text, rating, user?.uid);
       
       // Update local state
       setItems(prev => [savedItem, ...prev]);
@@ -46,8 +60,11 @@ const App: React.FC = () => {
         <h1 className="font-serif text-2xl font-bold text-pi-text tracking-tight">
           Accomplish.
         </h1>
-        <div className="text-xs font-sans text-pi-secondary uppercase tracking-widest border border-pi-hover px-3 py-1 rounded-full">
-           {items.length} Entries
+        <div className="flex items-center space-x-4">
+          <div className="text-xs font-sans text-pi-secondary uppercase tracking-widest border border-pi-hover px-3 py-1 rounded-full">
+            {items.length} Entries
+          </div>
+          <AuthButton user={user} onAuthChange={() => loadData()} />
         </div>
       </header>
 
