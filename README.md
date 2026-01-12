@@ -2,6 +2,8 @@
 
 A minimalist accomplishment tracker with a warm, journal-style aesthetic. Track your daily achievements with ratings and view your progress over time.
 
+<img width="2984" height="1784" alt="image" src="https://github.com/user-attachments/assets/8f183f20-4b15-4b08-bf91-81152ac90c96" />
+
 ## Features
 
 - ✨ **Simple & Clean UI** - Minimalist design inspired by Pi.website
