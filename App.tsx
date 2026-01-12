@@ -11,6 +11,7 @@ const App: React.FC = () => {
   const [loadingState, setLoadingState] = useState<LoadingState>('idle');
   const [initLoaded, setInitLoaded] = useState(false);
   const [user, setUser] = useState<User | null>(null);
+  const [showHistory, setShowHistory] = useState(false);
 
   // Set up auth state listener
   useEffect(() => {
@@ -61,9 +62,12 @@ const App: React.FC = () => {
           Accomplish.
         </h1>
         <div className="flex items-center space-x-4">
-          <div className="text-xs font-sans text-pi-secondary uppercase tracking-widest border border-pi-hover px-3 py-1 rounded-full">
+          <button
+            onClick={() => setShowHistory(!showHistory)}
+            className="text-xs font-sans text-pi-secondary hover:text-pi-accent transition-colors uppercase tracking-widest border border-pi-hover px-3 py-1 rounded-full hover:border-pi-accent"
+          >
             {items.length} Entries
-          </div>
+          </button>
           <AuthButton user={user} onAuthChange={() => loadData()} />
         </div>
       </header>
@@ -76,9 +80,11 @@ const App: React.FC = () => {
         </section>
 
         {/* List Section */}
-        <section className={`transition-opacity duration-700 ${initLoaded ? 'opacity-100' : 'opacity-0'}`}>
-          <AccomplishmentList items={items} />
-        </section>
+        {showHistory && (
+          <section className={`transition-opacity duration-700 ${initLoaded ? 'opacity-100' : 'opacity-0'}`}>
+            <AccomplishmentList items={items} />
+          </section>
+        )}
 
       </main>
 
