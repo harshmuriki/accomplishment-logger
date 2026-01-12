@@ -5,11 +5,11 @@ import { Accomplishment } from '../types';
 // TODO: User must replace these with their own Firebase project configuration
 const firebaseConfig = {
   apiKey: process.env.FIREBASE_API_KEY || "YOUR_API_KEY",
-  authDomain: "your-app.firebaseapp.com",
-  projectId: "your-app-id",
-  storageBucket: "your-app.appspot.com",
-  messagingSenderId: "123456789",
-  appId: "1:123456789:web:abcdef"
+  authDomain: process.env.FIREBASE_AUTH_DOMAIN || "your-app.firebaseapp.com",
+  projectId: process.env.FIREBASE_PROJECT_ID || "your-app-id",
+  storageBucket: process.env.FIREBASE_STORAGE_BUCKET || "your-app.appspot.com",
+  messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID || "123456789",
+  appId: process.env.FIREBASE_APP_ID || "1:123456789:web:abcdef"
 };
 
 // Initialize Firebase only if config is valid (mock check)
@@ -29,11 +29,10 @@ if (isFirebaseConfigured) {
 
 const STORAGE_KEY = 'accomplishments_local';
 
-export const saveAccomplishment = async (text: string, rating: number, aiInsight?: string): Promise<Accomplishment> => {
+export const saveAccomplishment = async (text: string, rating: number): Promise<Accomplishment> => {
   const newEntry = {
     text,
     rating,
-    aiInsight,
     timestamp: new Date()
   };
 
@@ -80,7 +79,6 @@ export const getAccomplishments = async (): Promise<Accomplishment[]> => {
           id: doc.id,
           text: data.text,
           rating: data.rating,
-          aiInsight: data.aiInsight,
           timestamp: data.timestamp.toDate(),
         } as Accomplishment;
       });

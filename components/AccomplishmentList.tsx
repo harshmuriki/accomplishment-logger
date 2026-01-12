@@ -36,24 +36,9 @@ const AccomplishmentList: React.FC<AccomplishmentListProps> = ({ items }) => {
             </div>
           </div>
           
-          <p className="text-lg md:text-xl font-serif text-pi-text leading-relaxed mb-4">
+          <p className="text-lg md:text-xl font-serif text-pi-text leading-relaxed">
             {item.text}
           </p>
-          
-          {item.aiInsight && (
-            <div className="mt-4 pt-4 border-t border-pi-bg">
-              <div className="flex items-start space-x-3">
-                <div className="flex-shrink-0 w-5 h-5 rounded-full bg-pi-accent/10 flex items-center justify-center mt-0.5">
-                  <svg className="w-3 h-3 text-pi-accent" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
-                  </svg>
-                </div>
-                <p className="text-sm font-sans text-pi-accent/80 italic">
-                  "{item.aiInsight}"
-                </p>
-              </div>
-            </div>
-          )}
         </div>
       ))}
     </div>

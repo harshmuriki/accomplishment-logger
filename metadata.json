@@ -1,5 +1,5 @@
 {
   "name": "Accomplish",
-  "description": "A minimalist accomplishment tracker with a warm, journal-style aesthetic inspired by Pi.website. Tracks achievements, ratings, and provides AI insights.",
+  "description": "A minimalist accomplishment tracker with a warm, journal-style aesthetic inspired by Pi.website. Tracks achievements and ratings.",
   "requestFramePermissions": []
 }

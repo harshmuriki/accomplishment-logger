@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import InputForm from './components/InputForm';
 import AccomplishmentList from './components/AccomplishmentList';
 import { saveAccomplishment, getAccomplishments } from './services/firebase';
-import { generateInsight } from './services/gemini';
 import { Accomplishment, LoadingState } from './types';
 
 const App: React.FC = () => {
@@ -20,19 +19,10 @@ const App: React.FC = () => {
     loadData();
   }, []);
 
-  const handleSave = async (text: string, rating: number, useAi: boolean) => {
+  const handleSave = async (text: string, rating: number) => {
     try {
-      let insight = '';
-      
-      // Step 1: Analyze with AI (if enabled)
-      if (useAi) {
-        setLoadingState('analyzing');
-        insight = await generateInsight(text, rating);
-      }
-
-      // Step 2: Save to Storage
       setLoadingState('saving');
-      const savedItem = await saveAccomplishment(text, rating, insight);
+      const savedItem = await saveAccomplishment(text, rating);
       
       // Update local state
       setItems(prev => [savedItem, ...prev]);

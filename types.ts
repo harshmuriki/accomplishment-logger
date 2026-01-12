@@ -3,7 +3,6 @@ export interface Accomplishment {
   text: string;
   rating: number;
   timestamp: Date;
-  aiInsight?: string; // Optional AI generated compliment/insight
 }
 
-export type LoadingState = 'idle' | 'saving' | 'analyzing' | 'error' | 'success';
+export type LoadingState = 'idle' | 'saving' | 'error' | 'success';
