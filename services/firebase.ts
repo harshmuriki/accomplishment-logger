@@ -11,8 +11,10 @@ import {
 } from "firebase/firestore";
 import {
   getAuth,
-  GoogleAuthProvider,
-  signInWithPopup,
+  // GoogleAuthProvider,
+  // signInWithPopup,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
   User,
@@ -50,17 +52,52 @@ if (isFirebaseConfigured) {
 const STORAGE_KEY = "accomplishments_local";
 
 // Auth functions
-export const signInWithGoogle = async (): Promise<User | null> => {
+// Google Sign-In (commented out - using email/password instead)
+// export const signInWithGoogle = async (): Promise<User | null> => {
+//   if (!auth) {
+//     console.warn("Firebase not configured");
+//     return null;
+//   }
+//   try {
+//     const provider = new GoogleAuthProvider();
+//     const result = await signInWithPopup(auth, provider);
+//     return result.user;
+//   } catch (error) {
+//     console.error("Error signing in:", error);
+//     throw error;
+//   }
+// };
+
+// Email/Password Sign-In
+export const signInWithEmail = async (
+  email: string,
+  password: string
+): Promise<User> => {
   if (!auth) {
-    console.warn("Firebase not configured");
-    return null;
+    throw new Error("Firebase not configured");
   }
   try {
-    const provider = new GoogleAuthProvider();
-    const result = await signInWithPopup(auth, provider);
+    const result = await signInWithEmailAndPassword(auth, email, password);
     return result.user;
   } catch (error) {
     console.error("Error signing in:", error);
+    throw error;
+  }
+};
+
+// Email/Password Sign-Up
+export const signUpWithEmail = async (
+  email: string,
+  password: string
+): Promise<User> => {
+  if (!auth) {
+    throw new Error("Firebase not configured");
+  }
+  try {
+    const result = await createUserWithEmailAndPassword(auth, email, password);
+    return result.user;
+  } catch (error) {
+    console.error("Error signing up:", error);
     throw error;
   }
 };
