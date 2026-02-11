@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import InputForm from './components/InputForm';
-import AccomplishmentList from './components/AccomplishmentList';
+import MonthView from './components/MonthView';
 import AuthButton from './components/AuthButton';
 import { saveAccomplishment, getAccomplishments, onAuthStateChange, getCurrentUser } from './services/firebase';
 import { Accomplishment, LoadingState } from './types';
@@ -82,7 +82,7 @@ const App: React.FC = () => {
         {/* List Section */}
         {showHistory && (
           <section className={`transition-opacity duration-700 ${initLoaded ? 'opacity-100' : 'opacity-0'}`}>
-            <AccomplishmentList items={items} />
+            <MonthView items={items} />
           </section>
         )}
 
