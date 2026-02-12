@@ -92,7 +92,7 @@ export default async function handler(
 
     const prompt = buildInsightPrompt(truncatedAccomplishments, timeframeType, timeframeKey);
     const response = await genAI.models.generateContent({
-      model: 'gemini-2.0-flash',
+      model: 'gemini-3-flash-preview',
       contents: prompt,
     });
     const insight = response.text ?? '';
