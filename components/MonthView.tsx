@@ -82,8 +82,16 @@ const MonthView: React.FC<MonthViewProps> = ({ items }) => {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to generate insight');
+        let message = 'Failed to generate insight';
+        try {
+          const errorData = await response.json();
+          message = errorData.error || message;
+        } catch {
+          if (response.status === 404) {
+            message = 'API not available. Run with "vercel dev" for local API.';
+          }
+        }
+        throw new Error(message);
       }
 
       const data = await response.json();
