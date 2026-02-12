@@ -8,6 +8,9 @@ import {
   getDocs,
   Timestamp,
   doc,
+  where,
+  limit,
+  setDoc,
 } from "firebase/firestore";
 import {
   getAuth,
@@ -19,7 +22,7 @@ import {
   onAuthStateChanged,
   User,
 } from "firebase/auth";
-import { Accomplishment } from "../types";
+import { Accomplishment, Insight, TimeframeType } from "../types";
 
 // TODO: User must replace these with their own Firebase project configuration
 const firebaseConfig = {
@@ -221,5 +224,88 @@ export const getAccomplishments = async (
       ...item,
       timestamp: new Date(item.timestamp),
     }));
+  }
+};
+
+// Insight-related functions
+
+export const getInsight = async (
+  timeframeKey: string,
+  timeframeType: TimeframeType,
+  userId?: string
+): Promise<Insight | null> => {
+  if (!db) return null;
+
+  try {
+    const currentUser = userId || auth?.currentUser?.uid;
+    if (!currentUser) return null;
+
+    const userDocRef = doc(db, "users", currentUser);
+    const insightsRef = collection(userDocRef, "insights");
+    const q = query(
+      insightsRef,
+      where("timeframeKey", "==", timeframeKey),
+      where("timeframeType", "==", timeframeType),
+      limit(1)
+    );
+
+    const querySnapshot = await getDocs(q);
+    if (querySnapshot.empty) return null;
+
+    const docData = querySnapshot.docs[0].data();
+    return {
+      id: querySnapshot.docs[0].id,
+      timeframeType: docData.timeframeType,
+      timeframeKey: docData.timeframeKey,
+      content: docData.content,
+      generatedAt: docData.generatedAt.toDate(),
+      accomplishmentCount: docData.accomplishmentCount,
+      accomplishmentIds: docData.accomplishmentIds || [],
+    };
+  } catch (error) {
+    console.error("Error fetching insight:", error);
+    return null;
+  }
+};
+
+export const saveInsight = async (
+  timeframeKey: string,
+  timeframeType: TimeframeType,
+  content: string,
+  accomplishmentIds: string[],
+  userId?: string
+): Promise<Insight | null> => {
+  if (!db) return null;
+
+  try {
+    const currentUser = userId || auth?.currentUser?.uid;
+    if (!currentUser) throw new Error("User must be logged in");
+
+    const userDocRef = doc(db, "users", currentUser);
+    const insightsRef = collection(userDocRef, "insights");
+
+    // Use deterministic ID: {timeframeType}_{timeframeKey}
+    const insightId = `${timeframeType}_${timeframeKey}`;
+    const insightDocRef = doc(insightsRef, insightId);
+
+    const insightData = {
+      timeframeType,
+      timeframeKey,
+      content,
+      generatedAt: Timestamp.fromDate(new Date()),
+      accomplishmentCount: accomplishmentIds.length,
+      accomplishmentIds,
+    };
+
+    await setDoc(insightDocRef, insightData);
+
+    return {
+      id: insightId,
+      ...insightData,
+      generatedAt: new Date(),
+    };
+  } catch (error) {
+    console.error("Error saving insight:", error);
+    return null;
   }
 };
