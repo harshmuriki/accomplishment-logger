@@ -1,46 +1,117 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Accomplishment } from '../types';
-import { getMonthKey, formatMonthLabel } from '../utils/dateUtils';
+import { Accomplishment, TimeframeType, Insight } from '../types';
+import {
+  getMonthKey,
+  formatMonthLabel,
+  getYearKey,
+  formatYearLabel,
+  getTimeframeKey,
+  formatTimeframeLabel,
+} from '../utils/dateUtils';
+import { getInsight, saveInsight } from '../services/firebase';
+import InsightCard from './InsightCard';
 
 interface MonthViewProps {
   items: Accomplishment[];
 }
 
 const MonthView: React.FC<MonthViewProps> = ({ items }) => {
-  const [currentMonthKey, setCurrentMonthKey] = useState<string>('');
+  const [timeframeType, setTimeframeType] = useState<TimeframeType>('month');
+  const [currentTimeframeKey, setCurrentTimeframeKey] = useState<string>('');
+  const [insight, setInsight] = useState<Insight | null>(null);
+  const [insightLoading, setInsightLoading] = useState(false);
 
-  // Build a sorted list of unique month keys (newest first)
-  const monthKeys = useMemo(() => {
+  // Build a sorted list of unique timeframe keys (newest first)
+  const timeframeKeys = useMemo(() => {
     const keys = new Set<string>();
-    items.forEach(item => keys.add(getMonthKey(item.timestamp)));
+    items.forEach((item) => keys.add(getTimeframeKey(item.timestamp, timeframeType)));
     return Array.from(keys).sort().reverse();
-  }, [items]);
+  }, [items, timeframeType]);
 
-  // Default to newest month if current key is unset or no longer valid
+  // Default to newest timeframe if current key is unset or no longer valid
   useEffect(() => {
-    if (monthKeys.length > 0 && !monthKeys.includes(currentMonthKey)) {
-      setCurrentMonthKey(monthKeys[0]);
+    if (timeframeKeys.length > 0 && !timeframeKeys.includes(currentTimeframeKey)) {
+      setCurrentTimeframeKey(timeframeKeys[0]);
     }
-  }, [monthKeys, currentMonthKey]);
+  }, [timeframeKeys, currentTimeframeKey]);
 
-  // Filter and sort items for the selected month
+  // Filter and sort items for the selected timeframe
   const currentItems = useMemo(() => {
     return items
-      .filter(item => getMonthKey(item.timestamp) === currentMonthKey)
+      .filter((item) => getTimeframeKey(item.timestamp, timeframeType) === currentTimeframeKey)
       .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
-  }, [items, currentMonthKey]);
+  }, [items, currentTimeframeKey, timeframeType]);
 
   // Navigation
-  const currentIndex = monthKeys.indexOf(currentMonthKey);
-  const hasPrev = currentIndex < monthKeys.length - 1;
+  const currentIndex = timeframeKeys.indexOf(currentTimeframeKey);
+  const hasPrev = currentIndex < timeframeKeys.length - 1;
   const hasNext = currentIndex > 0;
 
   const goToPrev = () => {
-    if (hasPrev) setCurrentMonthKey(monthKeys[currentIndex + 1]);
+    if (hasPrev) setCurrentTimeframeKey(timeframeKeys[currentIndex + 1]);
   };
   const goToNext = () => {
-    if (hasNext) setCurrentMonthKey(monthKeys[currentIndex - 1]);
+    if (hasNext) setCurrentTimeframeKey(timeframeKeys[currentIndex - 1]);
   };
+
+  // Load insight when timeframe changes
+  useEffect(() => {
+    if (currentTimeframeKey) {
+      loadInsight(currentTimeframeKey, timeframeType);
+    }
+  }, [currentTimeframeKey, timeframeType]);
+
+  // Load cached insight
+  const loadInsight = async (key: string, type: TimeframeType) => {
+    const cachedInsight = await getInsight(key, type);
+    setInsight(cachedInsight);
+  };
+
+  // Generate new insight
+  const generateInsight = async () => {
+    setInsightLoading(true);
+    try {
+      const response = await fetch('/api/insights', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          accomplishments: currentItems,
+          timeframeType,
+          timeframeKey: currentTimeframeKey,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to generate insight');
+      }
+
+      const data = await response.json();
+      const savedInsight = await saveInsight(
+        currentTimeframeKey,
+        timeframeType,
+        data.insight,
+        data.accomplishmentIds
+      );
+      setInsight(savedInsight);
+    } catch (error) {
+      console.error('Failed to generate insight:', error);
+      alert('Failed to generate insight. Please try again.');
+    } finally {
+      setInsightLoading(false);
+    }
+  };
+
+  // Check if insight is stale
+  const isInsightStale = useMemo(() => {
+    if (!insight) return false;
+    const currentIds = new Set(currentItems.map((i) => i.id));
+    const cachedIds = new Set(insight.accomplishmentIds);
+    return (
+      currentIds.size !== cachedIds.size ||
+      !Array.from(currentIds).every((id) => cachedIds.has(id))
+    );
+  }, [insight, currentItems]);
 
   // Summary stats
   const averageRating = currentItems.length > 0
@@ -58,8 +129,33 @@ const MonthView: React.FC<MonthViewProps> = ({ items }) => {
 
   return (
     <div className="max-w-2xl mx-auto pb-20">
+      {/* Timeframe Toggle */}
+      <div className="flex justify-center mb-6">
+        <div className="inline-flex rounded-full border border-pi-hover bg-white bg-opacity-40 p-1">
+          <button
+            onClick={() => setTimeframeType('month')}
+            className={`px-4 py-1.5 rounded-full text-xs font-sans font-medium transition-all ${
+              timeframeType === 'month'
+                ? 'bg-pi-accent text-white shadow-sm'
+                : 'text-pi-secondary hover:text-pi-accent'
+            }`}
+          >
+            Month
+          </button>
+          <button
+            onClick={() => setTimeframeType('year')}
+            className={`px-4 py-1.5 rounded-full text-xs font-sans font-medium transition-all ${
+              timeframeType === 'year'
+                ? 'bg-pi-accent text-white shadow-sm'
+                : 'text-pi-secondary hover:text-pi-accent'
+            }`}
+          >
+            Year
+          </button>
+        </div>
+      </div>
 
-      {/* Month Navigation Header */}
+      {/* Timeframe Navigation Header */}
       <div className="flex items-center justify-between mb-8 border-b border-pi-hover pb-4">
         <button
           disabled={!hasPrev}
@@ -73,7 +169,7 @@ const MonthView: React.FC<MonthViewProps> = ({ items }) => {
 
         <div className="text-center">
           <h2 className="text-pi-secondary font-sans text-xs uppercase tracking-widest">
-            {formatMonthLabel(currentMonthKey)}
+            {formatTimeframeLabel(currentTimeframeKey, timeframeType)}
           </h2>
           <span className="text-[10px] text-pi-secondary/60 font-sans">
             {currentItems.length} {currentItems.length === 1 ? 'entry' : 'entries'}
@@ -91,17 +187,31 @@ const MonthView: React.FC<MonthViewProps> = ({ items }) => {
         </button>
       </div>
 
-      {/* Monthly Summary */}
+      {/* Summary */}
       <div className="flex justify-center space-x-6 mb-8 text-center">
         <div>
           <span className="text-lg font-serif text-pi-accent">{averageRating.toFixed(1)}</span>
-          <span className="block text-[10px] text-pi-secondary font-sans uppercase tracking-wider">Avg Impact</span>
+          <span className="block text-[10px] text-pi-secondary font-sans uppercase tracking-wider">
+            Avg Impact
+          </span>
         </div>
         <div>
           <span className="text-lg font-serif text-pi-accent">{currentItems.length}</span>
-          <span className="block text-[10px] text-pi-secondary font-sans uppercase tracking-wider">Accomplishments</span>
+          <span className="block text-[10px] text-pi-secondary font-sans uppercase tracking-wider">
+            Accomplishments
+          </span>
         </div>
       </div>
+
+      {/* AI Insights Card */}
+      <InsightCard
+        insight={insight}
+        loading={insightLoading}
+        onGenerate={generateInsight}
+        onRegenerate={generateInsight}
+        isStale={isInsightStale}
+        hasAccomplishments={currentItems.length > 0}
+      />
 
       {/* Accomplishment Cards */}
       <div className="space-y-6">
